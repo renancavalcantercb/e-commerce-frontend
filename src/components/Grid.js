@@ -12,7 +12,7 @@ const itemsPerPageMobile = 4;
 function Grid() {
     const location = useLocation();
     const dispatch = useDispatch();
-    const items = useSelector((state) => state);
+    const items = useSelector((state) => state || []);
     const [currentPage, setCurrentPage] = useState(1);
     const [selectedItem, setSelectedItem] = useState(null);
 
@@ -27,7 +27,7 @@ function Grid() {
             try {
                 const response = await fetch(`${API_CONFIG.BASE_URL}/products?page=${currentPage}`);
                 const data = await response.json();
-                dispatch(updateItems(data));
+                dispatch(updateItems(data.data));
             } catch (error) {
                 console.error('Erro ao buscar os produtos:', error);
             }
@@ -43,13 +43,20 @@ function Grid() {
         });
     };
 
-    const filteredItems = location.pathname === '/sales' ? items.filter((item) => item.on_sale) : items;
+    const filteredItems = Array.isArray(items)
+        ? location.pathname === '/sales'
+            ? items.filter((item) => item.on_sale)
+            : items
+        : [];
     const indexOfLastItem =
         currentPage * (window.innerWidth < 640 ? itemsPerPageMobile : itemsPerPage);
     const indexOfFirstItem = indexOfLastItem - (window.innerWidth < 640 ? itemsPerPageMobile : itemsPerPage);
     const currentItems = filteredItems.slice(indexOfFirstItem, indexOfLastItem);
 
-    const totalPages = Math.ceil(filteredItems.length / (window.innerWidth < 640 ? itemsPerPageMobile : itemsPerPage));
+    const totalPages = Math.ceil(
+        (Array.isArray(filteredItems) ? filteredItems.length : 0) /
+        (window.innerWidth < 640 ? itemsPerPageMobile : itemsPerPage)
+    );
 
     const openItemModal = (item) => {
         setSelectedItem(item);
@@ -93,8 +100,9 @@ function Grid() {
                 {Array.from({ length: totalPages }, (_, i) => (
                     <button
                         key={i}
-                        className={`px-3 py-1 rounded-full ${currentPage === i + 1 ? 'bg-[#5046e6] text-white' : 'bg-gray-200 text-gray-700'}
-                            }`}
+                        className={`px-3 py-1 rounded-full ${
+                            currentPage === i + 1 ? 'bg-[#5046e6] text-white' : 'bg-gray-200 text-gray-700'
+                        }`}
                         onClick={() => handlePageChange(i + 1)}
                     >
                         {i + 1}
@@ -108,3 +116,4 @@ function Grid() {
 }
 
 export default Grid;
+
